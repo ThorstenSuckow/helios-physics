@@ -50,14 +50,12 @@ export namespace helios::physics::motion::systems {
             for (auto[
                 entity,
                 localVelocity,
-                localPosition,
-                active
+                localPosition
             ]: updateContext.view<
                 TMemberHandle,
                 Velocity3DComponent<TMemberHandle, Local>,
-                Position3DComponent<TMemberHandle, Local>,
-                Active<TMemberHandle>
-            >().whereEnabled()) {
+                Position3DComponent<TMemberHandle, Local>
+            >().withActive().whereAllEnabled()) {
 
 
                 localPosition->setValue(
