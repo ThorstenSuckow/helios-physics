@@ -57,11 +57,7 @@ export namespace helios::physics::motion::systems {
                 Position3DComponent<TMemberHandle, Local>
             >().withActive()
                .whereAllEnabled()
-               .template whereAnyDirty<
-                Active<TMemberHandle>,
-                Velocity3DComponent<TMemberHandle, Local>,
-                Position3DComponent<TMemberHandle, Local>
-            >()) {
+            ) {
 
                 localPosition->setValue(
                     localPosition->value() + localVelocity->value() * updateContext.deltaTime()
