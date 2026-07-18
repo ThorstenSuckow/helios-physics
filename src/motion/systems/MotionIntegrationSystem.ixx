@@ -55,13 +55,18 @@ export namespace helios::physics::motion::systems {
                 TMemberHandle,
                 Velocity3DComponent<TMemberHandle, Local>,
                 Position3DComponent<TMemberHandle, Local>
-            >().withActive().whereAllEnabled()) {
-
+            >().withActive()
+               .whereAllEnabled()
+               .template whereAnyDirty<
+                Active<TMemberHandle>,
+                Velocity3DComponent<TMemberHandle, Local>,
+                Position3DComponent<TMemberHandle, Local>
+            >()) {
 
                 localPosition->setValue(
                     localPosition->value() + localVelocity->value() * updateContext.deltaTime()
                 );
-
+                entity.template markDirty<Position3DComponent<TMemberHandle, Local>>();
 
             }
 
