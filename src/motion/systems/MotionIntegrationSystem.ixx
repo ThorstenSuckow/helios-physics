@@ -58,10 +58,10 @@ export namespace helios::physics::motion::systems {
             >().withActive()
             ) {
 
-                localPosition->setValue(
+                entity.setTrackedValue(
+                    localPosition,
                     localPosition->value() + localVelocity->value() * updateContext.deltaTime()
                 );
-                entity.template markDirty<Position3DComponent<TMemberHandle, Local>>();
 
             }
 
