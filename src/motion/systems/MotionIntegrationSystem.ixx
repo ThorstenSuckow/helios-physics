@@ -56,7 +56,6 @@ export namespace helios::physics::motion::systems {
                 Velocity3DComponent<TMemberHandle, Local>,
                 Position3DComponent<TMemberHandle, Local>
             >().withActive()
-               .whereAllEnabled()
             ) {
 
                 localPosition->setValue(
