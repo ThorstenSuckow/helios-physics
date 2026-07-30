@@ -36,6 +36,7 @@ export namespace helios::physics::motion::systems {
 
     public:
 
+        using Handle_type = TMemberHandle;
 
         using EngineRoleTag = TypedSystemRole;
 
