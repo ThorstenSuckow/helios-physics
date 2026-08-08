@@ -14,7 +14,7 @@ import helios.engine.runtime.world.tags.SystemRole;
 
 import helios.engine.runtime.world.UpdateContext;
 
-import helios.engine.core.types.ComponentTypeTags;
+import helios.engine.core.types;
 
 import helios.engine.spatial.components;
 
