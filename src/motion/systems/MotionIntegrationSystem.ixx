@@ -6,7 +6,7 @@ module;
 
 export module helios.physics.motion.systems:MotionIntegrationSystem;
 
-import helios.ecs.components.Active;
+import helios.ecs.component;
 
 import helios.physics.motion.components;
 
@@ -38,7 +38,7 @@ export namespace helios::physics::motion::systems {
 
         using Handle_type = TMemberHandle;
 
-        using EngineRoleTag = TypedSystemRole;
+        using EcsRoleTag = TypedSystemRole;
 
 
         /**
