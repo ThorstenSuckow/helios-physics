@@ -10,9 +10,11 @@ import helios.ecs.component;
 
 import helios.physics.motion.components;
 
-import helios.engine.runtime.world.tags.SystemRole;
+import helios.ecs.system.tags;
 
 import helios.engine.runtime.world.UpdateContext;
+import helios.engine.runtime.world.types;
+import helios.engine.runtime.concepts;
 
 import helios.engine.core.types;
 
@@ -23,36 +25,42 @@ using namespace helios::engine::core::types;
 using namespace helios::physics::motion::components;
 using namespace helios::engine::spatial::components;
 using namespace helios::engine::runtime::world;
-using namespace helios::engine::runtime::world::tags;
+
 export namespace helios::physics::motion::systems {
 
     /**
      * @brief Updates local position by applying local velocity each frame.
      *
      * @tparam TMemberHandle ECS handle type.
+     * @tparam TUpdateContextType Type of the UpdateContext to use.
      */
-    template<typename TMemberHandle>
+    template<typename TMemberHandle,
+             typename TUpdateContextType = types::SystemUpdateContext>
+    requires engine::runtime::concepts::ProvidesUpdateContext<TUpdateContextType, UpdateContext>
     class MotionIntegrationSystem {
 
     public:
 
         using Handle_type = TMemberHandle;
+        using UpdateContextType = TUpdateContextType;
 
-        using EcsRoleTag = TypedSystemRole;
+        using EcsRoleTag = ecs::system::tags::TypedSystemRole;
 
 
         /**
          * @brief Applies Euler integration to all active entities with position and velocity.
          *
-         * @param updateContext Frame update context containing view access and delta time.
+         * @param updateCtx Frame update context containing view access and delta time.
          */
-        void update(UpdateContext& updateContext) {
+        bool update(TUpdateContextType& updateCtx) {
+
+            auto& updateContext = updateCtx.updateContext();
 
             for (auto[
                 entity,
                 localVelocity,
                 localPosition
-            ]: updateContext.view<
+            ]: updateContext.template view<
                 TMemberHandle,
                 Velocity3DComponent<TMemberHandle, Local>,
                 Position3DComponent<TMemberHandle, Local>
@@ -66,6 +74,7 @@ export namespace helios::physics::motion::systems {
 
             }
 
+            return true;
         }
 
 
