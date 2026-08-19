@@ -32,17 +32,13 @@ export namespace helios::physics::motion::systems {
      * @brief Updates local position by applying local velocity each frame.
      *
      * @tparam TMemberHandle ECS handle type.
-     * @tparam TUpdateContextType Type of the UpdateContext to use.
      */
-    template<typename TMemberHandle,
-             typename TUpdateContextType = types::SystemUpdateContext>
-    requires engine::runtime::concepts::ProvidesUpdateContext<TUpdateContextType, UpdateContext>
+    template<typename TMemberHandle>
     class MotionIntegrationSystem {
 
     public:
 
         using Handle_type = TMemberHandle;
-        using UpdateContextType = TUpdateContextType;
 
         using EcsRoleTag = ecs::system::tags::TypedSystemRole;
 
@@ -52,6 +48,8 @@ export namespace helios::physics::motion::systems {
          *
          * @param updateCtx Frame update context containing view access and delta time.
          */
+        template<typename TUpdateContextType>
+        requires engine::runtime::concepts::ProvidesUpdateContext<TUpdateContextType, UpdateContext>
         bool update(TUpdateContextType& updateCtx) {
 
             auto& updateContext = updateCtx.updateContext();
