@@ -50,7 +50,7 @@ export namespace helios::physics::motion::systems {
          */
         template<typename TUpdateContextType>
         requires engine::runtime::concepts::ProvidesUpdateContext<TUpdateContextType, UpdateContext>
-        bool update(TUpdateContextType& updateCtx) {
+        void update(TUpdateContextType& updateCtx) noexcept {
 
             auto& updateContext = updateCtx.updateContext();
 
@@ -72,7 +72,6 @@ export namespace helios::physics::motion::systems {
 
             }
 
-            return true;
         }
 
 
