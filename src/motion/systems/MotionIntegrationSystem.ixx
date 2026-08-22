@@ -46,13 +46,9 @@ export namespace helios::physics::motion::systems {
         /**
          * @brief Applies Euler integration to all active entities with position and velocity.
          *
-         * @param updateCtx Frame update context containing view access and delta time.
+         * @param updateContext Frame update context containing view access and delta time.
          */
-        template<typename TUpdateContextType>
-        requires engine::runtime::concepts::ProvidesUpdateContext<TUpdateContextType, UpdateContext>
-        void update(TUpdateContextType& updateCtx) noexcept {
-
-            auto& updateContext = updateCtx.updateContext();
+        void update(UpdateContext& updateContext) noexcept {
 
             for (auto[
                 entity,
