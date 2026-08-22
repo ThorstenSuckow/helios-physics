@@ -10,7 +10,7 @@ import helios.ecs.component;
 
 import helios.physics.motion.components;
 
-import helios.ecs.system.tags;
+
 
 import helios.engine.runtime.world.UpdateContext;
 import helios.engine.runtime.world.types;
@@ -40,7 +40,6 @@ export namespace helios::physics::motion::systems {
 
         using Handle_type = TMemberHandle;
 
-        using EcsRoleTag = ecs::system::tags::TypedSystemRole;
 
 
         /**
