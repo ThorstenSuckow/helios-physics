@@ -13,6 +13,7 @@ import helios.physics.motion.components;
 
 
 import helios.engine.runtime.gameloop.types;
+import helios.ecs.EcsWorld;
 
 
 import helios.engine.core.types;
@@ -35,6 +36,7 @@ export namespace helios::physics::motion::systems {
     template<typename TMemberHandle>
     class MotionIntegrationSystem {
 
+        using EcsWorld = ecs::EcsWorld;
         using UpdateContext = helios::engine::runtime::gameloop::types::UpdateContext;
 
     public:
@@ -46,15 +48,16 @@ export namespace helios::physics::motion::systems {
         /**
          * @brief Applies Euler integration to all active entities with position and velocity.
          *
-         * @param updateContext Frame update context containing view access and delta time.
+         * @param ecsWorld Frame ECS world containing view access.
+         * @param updateContext Frame update context containing delta time.
          */
-        void update(UpdateContext& updateContext) noexcept {
+        void update(EcsWorld& ecsWorld, const UpdateContext& updateContext) noexcept {
 
             for (auto[
                 entity,
                 localVelocity,
                 localPosition
-            ]: updateContext.template view<
+            ]: ecsWorld.view<
                 TMemberHandle,
                 Velocity3DComponent<TMemberHandle, Local>,
                 Position3DComponent<TMemberHandle, Local>
