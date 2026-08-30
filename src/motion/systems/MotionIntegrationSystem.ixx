@@ -12,8 +12,8 @@ import helios.physics.motion.components;
 
 
 
-import helios.engine.runtime.world.UpdateContext;
-import helios.engine.runtime.concepts;
+import helios.engine.runtime.gameloop.types;
+
 
 import helios.engine.core.types;
 
@@ -23,7 +23,7 @@ using namespace helios::ecs::components;
 using namespace helios::engine::core::types;
 using namespace helios::physics::motion::components;
 using namespace helios::engine::spatial::components;
-using namespace helios::engine::runtime::world;
+
 
 export namespace helios::physics::motion::systems {
 
@@ -34,6 +34,8 @@ export namespace helios::physics::motion::systems {
      */
     template<typename TMemberHandle>
     class MotionIntegrationSystem {
+
+        using UpdateContext = helios::engine::runtime::gameloop::types::UpdateContext;
 
     public:
 
