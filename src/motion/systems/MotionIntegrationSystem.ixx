@@ -13,7 +13,7 @@ import helios.physics.motion.components;
 
 
 import helios.engine.runtime.gameloop.types;
-import helios.ecs.EcsWorld;
+import helios.ecs.entity.EntityWorld;
 
 
 import helios.engine.core.types;
@@ -36,7 +36,7 @@ export namespace helios::physics::motion::systems {
     template<typename TMemberHandle>
     class MotionIntegrationSystem {
 
-        using EcsWorld = ecs::EcsWorld;
+        using EntityWorld = ecs::entity::EntityWorld;
         using UpdateContext = helios::engine::runtime::gameloop::types::UpdateContext;
 
     public:
@@ -51,7 +51,7 @@ export namespace helios::physics::motion::systems {
          * @param ecsWorld Frame ECS world containing view access.
          * @param updateContext Frame update context containing delta time.
          */
-        void update(EcsWorld& ecsWorld, const UpdateContext& updateContext) noexcept {
+        void update(EntityWorld& ecsWorld, const UpdateContext& updateContext) noexcept {
 
             for (auto[
                 entity,
