@@ -14,6 +14,8 @@ import helios.physics.motion.components;
 
 import helios.engine.runtime.gameloop.types;
 import helios.ecs.entity.EntityWorld;
+import helios.ecs.entity.EntityAccessSet;
+import helios.ecs.entity.Query;
 
 
 import helios.engine.core.types;
@@ -39,29 +41,42 @@ export namespace helios::physics::motion::systems {
         using EntityWorld = ecs::entity::EntityWorld;
         using UpdateContext = helios::engine::runtime::gameloop::types::UpdateContext;
 
+        template<typename TRead, typename TWrite>
+        using Query = ecs::entity::Query<TMemberHandle, TRead, TWrite>;
+
+        template<typename ... TReads>
+        using Read = ecs::entity::ReadSet<TReads...>;
+
+        template<typename ... TWrites>
+        using Write = ecs::entity::WriteSet<TWrites...>;
+
     public:
 
-        using Handle_type = TMemberHandle;
+        using HandleType = TMemberHandle;
 
 
 
         /**
          * @brief Applies Euler integration to all active entities with position and velocity.
          *
-         * @param ecsWorld Frame ECS world containing view access.
+         * @param query Frame-local query over local velocity and local position.
          * @param updateContext Frame update context containing delta time.
          */
-        void update(EntityWorld& ecsWorld, const UpdateContext& updateContext) noexcept {
+        void update(
+            Query<
+                Read<Velocity3DComponent<TMemberHandle, Local>,
+                    Position3DComponent<TMemberHandle, Local>
+                >,
+                Write<Position3DComponent<TMemberHandle, Local>>
+            > query,
+            const UpdateContext& updateContext
+        ) noexcept {
 
             for (auto[
                 entity,
                 localVelocity,
                 localPosition
-            ]: ecsWorld.view<
-                TMemberHandle,
-                Velocity3DComponent<TMemberHandle, Local>,
-                Position3DComponent<TMemberHandle, Local>
-            >().withActive()
+            ]: query.withActive()
             ) {
 
                 entity.setTrackedValue(
