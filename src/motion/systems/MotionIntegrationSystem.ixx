@@ -84,8 +84,8 @@ export namespace helios::physics::motion::systems {
             ]: query
             ) {
 
-                entity.setTrackedValue(
-                    localPosition,
+                entity.template track<Position3DComponent<TMemberHandle, Local>>()
+                    ->setValue(
                     localPosition->value() + localVelocity->value() * updateContext.deltaTime()
                 );
             }
