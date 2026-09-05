@@ -4,6 +4,10 @@
  */
 module;
 
+#include <iostream>
+#include <ostream>
+
+
 export module helios.physics.motion.systems:MotionIntegrationSystem;
 
 import helios.ecs.component;
@@ -41,8 +45,8 @@ export namespace helios::physics::motion::systems {
         using EntityWorld = ecs::entity::EntityWorld;
         using UpdateContext = helios::engine::runtime::gameloop::types::UpdateContext;
 
-        template<typename TRead, typename TWrite>
-        using Query = ecs::entity::Query<TMemberHandle, TRead, TWrite>;
+        template<typename TRead, typename TWrite, typename TFilter = ecs::entity::Filter<ecs::entity::AnyDirty<>>>
+        using Query = ecs::entity::Query<TRead, TWrite, TFilter>;
 
         template<typename ... TReads>
         using Read = ecs::entity::ReadSet<TReads...>;
@@ -67,7 +71,8 @@ export namespace helios::physics::motion::systems {
                 Read<Velocity3DComponent<TMemberHandle, Local>,
                     Position3DComponent<TMemberHandle, Local>
                 >,
-                Write<Position3DComponent<TMemberHandle, Local>>
+                Write<Position3DComponent<TMemberHandle, Local>>,
+                ecs::entity::Filter<ecs::entity::IsActive>
             > query,
             const UpdateContext& updateContext
         ) noexcept {
@@ -76,14 +81,13 @@ export namespace helios::physics::motion::systems {
                 entity,
                 localVelocity,
                 localPosition
-            ]: query.withActive()
+            ]: query
             ) {
 
                 entity.setTrackedValue(
                     localPosition,
                     localPosition->value() + localVelocity->value() * updateContext.deltaTime()
                 );
-
             }
 
         }
