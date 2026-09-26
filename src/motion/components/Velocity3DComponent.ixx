@@ -21,8 +21,8 @@ export namespace helios::physics::motion::components {
      * @tparam TOwnerHandle ECS handle type.
      * @tparam TArgs Optional component tags.
      */
-    template<typename TOwnerHandle, typename ... TArgs>
-    using Velocity3DComponent = helios::engine::core::components::Vec3Component<VelocityComponentDomain, float, TOwnerHandle, TArgs...>;
+    template<typename ... TArgs>
+    using Velocity3DComponent = helios::engine::core::components::Vec3Component<VelocityComponentDomain, float, TArgs...>;
 
 
 }
