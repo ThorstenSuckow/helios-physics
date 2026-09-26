@@ -46,7 +46,7 @@ export namespace helios::physics::motion::systems {
         using UpdateContext = helios::engine::runtime::gameloop::types::UpdateContext;
 
         template<typename TRead, typename TWrite, typename TFilter = ecs::entity::query::Filter<ecs::entity::query::AnyDirty<>>>
-        using Query = ecs::entity::query::Query<TRead, TWrite, TFilter>;
+        using Query = ecs::entity::query::Query<TMemberHandle, TRead, TWrite, TFilter>;
 
         template<typename ... TReads>
         using Read = ecs::entity::ReadSet<TReads...>;
@@ -68,10 +68,10 @@ export namespace helios::physics::motion::systems {
          */
         void update(
             Query<
-                Read<Velocity3DComponent<TMemberHandle, Local>,
-                    Position3DComponent<TMemberHandle, Local>
+                Read<Velocity3DComponent<Local>,
+                    Position3DComponent<Local>
                 >,
-                Write<Position3DComponent<TMemberHandle, Local>>,
+                Write<Position3DComponent<Local>>,
                 ecs::entity::query::Filter<ecs::entity::query::IsActive>
             > query,
             const UpdateContext& updateContext
@@ -84,7 +84,7 @@ export namespace helios::physics::motion::systems {
             ]: query
             ) {
 
-                entity.template track<Position3DComponent<TMemberHandle, Local>>()
+                entity.template track<Position3DComponent<Local>>()
                     ->setValue(
                     localPosition->value() + localVelocity->value() * updateContext.deltaTime()
                 );
