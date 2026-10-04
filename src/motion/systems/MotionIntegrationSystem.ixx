@@ -18,7 +18,7 @@ import helios.physics.motion.components;
 
 import helios.engine.runtime.gameloop.types;
 import helios.ecs.entity.EntityWorld;
-import helios.ecs.entity.EntityAccessSet;
+import helios.ecs.entity.QueryAccessSet;
 import helios.ecs.entity.query.Query;
 
 
