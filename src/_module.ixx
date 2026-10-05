@@ -5,3 +5,4 @@
 export module helios.physics;
 
 export import helios.physics.motion;
+export import helios.physics.collision;
