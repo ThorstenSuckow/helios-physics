@@ -188,11 +188,19 @@ export namespace helios::physics::collision::systems {
 
             for (auto [entity, cc, wb, vel] : query) {
 
-                updateCollisionCandidate(
-                    entity.handle(),
-                    worldBoundsToGridBounds(wb->value()),
-                    wb, vel
-                );
+                auto w2g = worldBoundsToGridBounds(wb->value());
+
+                if (!w2g) {
+                    continue;
+                }
+
+                if (w2g) {
+                    updateCollisionCandidate(
+                        entity.handle(),
+                        *w2g,
+                        wb, vel
+                    );
+                }
             }
 
             for (const auto idx : trackedCells_) {
@@ -220,7 +228,11 @@ export namespace helios::physics::collision::systems {
          *
          * @return An integer AABB representing the range of grid cell indices the entity spans.
          */
-        [[nodiscard]] helios::math::aabbi worldBoundsToGridBounds(const helios::math::aabbf& aabbf) const noexcept {
+        [[nodiscard]] std::optional<helios::math::aabbi> worldBoundsToGridBounds(const helios::math::aabbf& aabbf) const noexcept {
+
+            if (!gridBounds_.intersects(aabbf)) {
+                return std::nullopt;
+            }
 
             helios::math::vec3f min = aabbf.min() - gridBounds_.min();
             helios::math::vec3f max = aabbf.max() - gridBounds_.min();
@@ -316,9 +328,12 @@ export namespace helios::physics::collision::systems {
 
                     auto lHandle = candidate.entityHandle;
                     auto rHandle = match.entityHandle;
+                    auto leftVelocity    = candidate.velocity;
+                    auto rightVelocity   = match.velocity;
 
                     if (lHandle > rHandle) {
                         std::swap(lHandle, rHandle);
+                        std::swap(leftVelocity, rightVelocity);
                     }
 
                     // if we have already processed a collision, do not add this collision again.
@@ -331,8 +346,8 @@ export namespace helios::physics::collision::systems {
                     collisionPairs_.push_back(CollisionPair{
                         lHandle,
                         rHandle,
-                        candidate.velocity,
-                        match.velocity,
+                        leftVelocity,
+                        rightVelocity,
                         helios::math::overlapCenter(aabbCandidate, aabbMatch)
                     });
                 }
