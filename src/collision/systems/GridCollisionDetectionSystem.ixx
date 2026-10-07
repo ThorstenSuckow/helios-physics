@@ -42,7 +42,6 @@ export namespace helios::physics::collision::systems {
 
         using CollisionComponent = components::CollisionComponent;
         using WorldBoundsComponent = engine::spatial::components::BoundsComponent<engine::core::types::World>;
-        using LocalVelocityComponent = physics::motion::components::Velocity3DComponent<engine::core::types::Local>;
         using CollisionPair = types::CollisionPair<THandle>;
 
         struct EntityHandlePairHash {
@@ -61,7 +60,6 @@ export namespace helios::physics::collision::systems {
         struct CollisionCandidate {
             THandle entityHandle;
             helios::math::aabbf bounds;
-            helios::math::vec3f velocity;
         };
 
 
@@ -178,15 +176,14 @@ export namespace helios::physics::collision::systems {
                 THandle,
                 ecs::entity::ReadSet<
                     CollisionComponent,
-                    WorldBoundsComponent,
-                    LocalVelocityComponent
+                    WorldBoundsComponent
                 >
             > query
         ) noexcept {
 
             prepareCollisionDetection();
 
-            for (auto [entity, cc, wb, vel] : query) {
+            for (auto [entity, cc, wb] : query) {
 
                 auto w2g = worldBoundsToGridBounds(wb->value());
 
@@ -198,7 +195,7 @@ export namespace helios::physics::collision::systems {
                     updateCollisionCandidate(
                         entity.handle(),
                         *w2g,
-                        wb, vel
+                        wb
                     );
                 }
             }
@@ -266,13 +263,11 @@ export namespace helios::physics::collision::systems {
          * @param bounds Grid cell index bounds (integer AABB) the entity spans.
          * @param worldBoundsComponent Pointer to the entity's world-space bounds component.
          * @param collisionComponent Pointer to the entity's collision component.
-         * @param velocityComponent Pointer to the entity's local velocity component.
          */
         inline void updateCollisionCandidate(
             THandle entityHandle,
             const helios::math::aabbi& bounds,
-            const WorldBoundsComponent* worldBoundsComponent,
-            const LocalVelocityComponent* velocityComponent
+            const WorldBoundsComponent* worldBoundsComponent
         ) {
             const auto xMin = bounds.min()[0];
             const auto xMax = bounds.max()[0];
@@ -289,8 +284,7 @@ export namespace helios::physics::collision::systems {
                         collisionCandidates.push_back(
                             CollisionCandidate{
                                 entityHandle,
-                                worldBoundsComponent->value(),
-                                velocityComponent->value()
+                                worldBoundsComponent->value()
                             }
                         );
 
@@ -319,21 +313,21 @@ export namespace helios::physics::collision::systems {
                 for (size_t j = i+1; j < candidates.size(); j++) {
 
                     auto& match = candidates[j];
-
-
                     const helios::math::aabbf& aabbMatch = match.bounds;
+
                     if (!aabbCandidate.intersects(aabbMatch)) {
                         continue;
                     }
 
                     auto lHandle = candidate.entityHandle;
                     auto rHandle = match.entityHandle;
-                    auto leftVelocity    = candidate.velocity;
-                    auto rightVelocity   = match.velocity;
+
+                    const auto* a = &candidate.bounds;
+                    const auto* b = &match.bounds;
 
                     if (lHandle > rHandle) {
                         std::swap(lHandle, rHandle);
-                        std::swap(leftVelocity, rightVelocity);
+                        std::swap(a, b);
                     }
 
                     // if we have already processed a collision, do not add this collision again.
@@ -346,9 +340,8 @@ export namespace helios::physics::collision::systems {
                     collisionPairs_.push_back(CollisionPair{
                         lHandle,
                         rHandle,
-                        leftVelocity,
-                        rightVelocity,
-                        helios::math::overlapCenter(aabbCandidate, aabbMatch)
+                        helios::math::overlapCenter(*a, *b),
+                        helios::math::overlapNormal(*a, *b)
                     });
                 }
             }

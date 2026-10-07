@@ -10,9 +10,8 @@ export namespace helios::physics::collision::types {
     struct CollisionPair {
         THandle leftHandle;
         THandle rightHandle;
-        helios::math::vec3f leftVelocity;
-        helios::math::vec3f rightVelocity;
         helios::math::vec3f overlapCenter;
+        helios::math::vec3f overlapNormal;
     };
 
 }
