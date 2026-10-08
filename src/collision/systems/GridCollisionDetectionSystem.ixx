@@ -44,19 +44,6 @@ export namespace helios::physics::collision::systems {
         using WorldBoundsComponent = engine::spatial::components::BoundsComponent<engine::core::types::World>;
         using CollisionPair = types::CollisionPair<THandle>;
 
-        struct EntityHandlePairHash {
-
-            std::uint64_t operator()(const std::pair<THandle, THandle>& pair) const {
-
-                auto g1 = std::hash<THandle>{}(pair.first);
-                auto g2 = std::hash<THandle>{}(pair.second);
-
-                // compute the hash for the pair - shift g2 one position left, then xor with g1.
-                return g1 ^ (g2 << 1);
-            };
-
-        };
-
         struct CollisionCandidate {
             THandle entityHandle;
             helios::math::aabbf bounds;
@@ -64,9 +51,9 @@ export namespace helios::physics::collision::systems {
 
 
         struct GridCell {
-            std::vector<CollisionCandidate> collisionCandidates;
+            std::vector<std::size_t> collisionCandidateIndices;
             void clear() {
-                collisionCandidates.clear();
+                collisionCandidateIndices.clear();
             }
         };
 
@@ -74,7 +61,8 @@ export namespace helios::physics::collision::systems {
 
 
         std::vector<CollisionPair> collisionPairs_;
-        std::unordered_set<std::pair<THandle, THandle>, EntityHandlePairHash> solvedCollisions_;
+
+        std::vector<CollisionCandidate> collisionCandidates_;
 
         /**
          * @brief Size of each grid cell in world units.
@@ -150,8 +138,8 @@ export namespace helios::physics::collision::systems {
             }
 
             trackedCells_.clear();
-            solvedCollisions_.clear();
             collisionPairs_.clear();
+            collisionCandidates_.clear();
         }
 
 
@@ -202,12 +190,20 @@ export namespace helios::physics::collision::systems {
 
             for (const auto idx : trackedCells_) {
 
-                if (cells_[idx].collisionCandidates.size() < 2) {
+                if (cells_[idx].collisionCandidateIndices.size() < 2) {
                     continue;
                 }
 
                 solveCell(cells_[idx]);
             }
+
+            std::sort(collisionPairs_.begin(), collisionPairs_.end());
+
+            collisionPairs_.erase(
+                std::unique(collisionPairs_.begin(), collisionPairs_.end()),
+                collisionPairs_.end()
+            );
+
 
             return CollisionDetectionResult<THandle>(
                 std::move(collisionPairs_)
@@ -279,17 +275,21 @@ export namespace helios::physics::collision::systems {
             for (int x = xMin; x <= xMax; x++) {
                 for (int y = yMin; y <= yMax; y++) {
                     for (int z = zMin; z <= zMax; z++) {
-                        auto& [collisionCandidates] = cell(x, y, z);
+                        auto& [collisionCandidateIndices] = cell(x, y, z);
 
-                        collisionCandidates.push_back(
+                        collisionCandidates_.push_back(
                             CollisionCandidate{
                                 entityHandle,
                                 worldBoundsComponent->value()
                             }
                         );
 
+                        collisionCandidateIndices.push_back(collisionCandidates_.size() - 1);
+
+
+
                         // only consider the first added to prevent dups
-                        if (collisionCandidates.size() == 1) {
+                        if (collisionCandidateIndices.size() == 1) {
                             const auto idx = cellIndex(x, y, z);
                             trackedCells_.push_back(idx);
                         }
@@ -303,16 +303,16 @@ export namespace helios::physics::collision::systems {
          */
         inline void solveCell(GridCell& cell) {
 
-            auto& candidates = cell.collisionCandidates;
+            auto& candidateIndices = cell.collisionCandidateIndices;
 
-            for (size_t i = 0; i < candidates.size(); i++) {
+            for (size_t i = 0; i < candidateIndices.size(); i++) {
 
-                CollisionCandidate& candidate = candidates[i];
+                CollisionCandidate& candidate = collisionCandidates_[candidateIndices[i]];
                 const helios::math::aabbf& aabbCandidate = candidate.bounds;
 
-                for (size_t j = i+1; j < candidates.size(); j++) {
+                for (size_t j = i+1; j < candidateIndices.size(); j++) {
 
-                    auto& match = candidates[j];
+                    auto& match = collisionCandidates_[candidateIndices[j]];
                     const helios::math::aabbf& aabbMatch = match.bounds;
 
                     if (!aabbCandidate.intersects(aabbMatch)) {
@@ -329,13 +329,6 @@ export namespace helios::physics::collision::systems {
                         std::swap(lHandle, rHandle);
                         std::swap(a, b);
                     }
-
-                    // if we have already processed a collision, do not add this collision again.
-                    if (solvedCollisions_.contains({lHandle, rHandle})) {
-                        continue;
-                    }
-
-                    solvedCollisions_.insert({lHandle, rHandle});
 
                     collisionPairs_.push_back(CollisionPair{
                         lHandle,
@@ -354,7 +347,7 @@ export namespace helios::physics::collision::systems {
          * @param y Y-coordinate of the cell (0 to cellsY - 1).
          * @param z Z-coordinate of the cell (0 to cellsZ - 1).
          *
-         * @return Reference to the GridCell at the specified coordinates.
+         * @return Reference to the xGridCell at the specified coordinates.
          */
         [[nodiscard]] inline GridCell& cell(const unsigned int x, const  unsigned int y, const unsigned int z) noexcept {
             return cells_[cellIndex(x, y, z)];
