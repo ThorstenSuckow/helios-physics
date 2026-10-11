@@ -6,8 +6,6 @@ module;
 
 export module helios.physics.collision.systems:CollisionResponseSystem;
 
-import helios.physics.collision.CollisionDetectionResult;
-
 import helios.physics.collision.components;
 import helios.physics.collision.types;
 import helios.physics.motion.components;
@@ -34,7 +32,7 @@ export namespace helios::physics::collision::systems {
     public:
 
         void update(
-        const CollisionDetectionResult<THandle>& collisionResult,
+        const types::CollisionDetectionResult<THandle>& collisionResult,
             ecs::entity::query::Query<
                 THandle,
                 ecs::entity::ReadSet<motion::components::Velocity3DComponent<engine::core::types::Local>>,

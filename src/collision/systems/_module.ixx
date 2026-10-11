@@ -4,5 +4,5 @@
  */
 export module helios.physics.collision.systems;
 
-export import :GridCollisionDetectionSystem;
+export import :CollisionDetectionSystem;
 export import :CollisionResponseSystem;

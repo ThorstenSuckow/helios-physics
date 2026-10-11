@@ -2,18 +2,18 @@ module;
 
 #include <vector>
 #include <span>
-export module helios.physics.collision.CollisionDetectionResult;
+export module helios.physics.collision.types:CollisionDetectionResult;
 
-import  helios.physics.collision.types;
+import :CollisionPair;
 
 
-export namespace helios::physics::collision {
+export namespace helios::physics::collision ::types{
 
     template<typename THandle>
     class CollisionDetectionResult {
 
 
-        using CollisionPair = types::CollisionPair<THandle>;
+        using CollisionPair = CollisionPair<THandle>;
 
         std::vector<CollisionPair> collisionPairs_;
 
