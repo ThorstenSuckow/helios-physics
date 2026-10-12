@@ -4,4 +4,5 @@
  */
 export module helios.physics.collision.strategies;
 
-export import :GridCollisionDetectionStrategy;
+export import :GridCollisionDetection;
+export import :CollisionImpulseResponse;

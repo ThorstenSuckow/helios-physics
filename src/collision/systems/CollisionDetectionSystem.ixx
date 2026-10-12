@@ -27,6 +27,8 @@ import helios.ecs.entity;
 import helios.ecs.common;
 
 import helios.core.log;
+import helios.core.thread;
+
 
 import helios.math;
 
@@ -66,7 +68,8 @@ export namespace helios::physics::collision::systems {
                     CollisionComponent,
                     WorldBoundsComponent
                 >
-            > query
+            > query,
+            core::thread::ThreadPool& threadPool
         ) noexcept {
 
             strategy_.reset();
@@ -75,7 +78,7 @@ export namespace helios::physics::collision::systems {
                 strategy_.addCollisionCandidate(entity.handle(), wb->value());
             }
 
-            return strategy_.solveCollisions();
+            return strategy_.solveCollisions(threadPool);
         }
 
 

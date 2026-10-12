@@ -4,6 +4,7 @@ module;
 export module helios.physics.collision.types:CollisionPair;
 
 import helios.math;
+import :CollisionSnapshot;
 
 export namespace helios::physics::collision::types {
 
@@ -14,8 +15,7 @@ export namespace helios::physics::collision::types {
 
         THandle leftHandle;
         THandle rightHandle;
-        helios::math::vec3f overlapCenter;
-        helios::math::vec3f overlapNormal;
+        CollisionSnapshot collisionSnapshot;
 
         explicit CollisionPair(
             THandle leftH,
@@ -25,8 +25,7 @@ export namespace helios::physics::collision::types {
             key {(std::uint64_t{leftH.entityId()} << 32) | std::uint64_t{rightH.entityId()}},
             leftHandle(leftH),
             rightHandle(rightH),
-            overlapCenter(overlapC),
-            overlapNormal(overlapN) {}
+            collisionSnapshot(CollisionSnapshot{overlapC, overlapN}) {}
 
         bool operator==(const CollisionPair& other) const {
             return key == other.key;

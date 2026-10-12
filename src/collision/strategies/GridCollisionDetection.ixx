@@ -12,9 +12,10 @@ module;
 #include <unordered_set>
 #include <vector>
 #include <cstddef>
+#include <execution>
 
 
-export module helios.physics.collision.strategies:GridCollisionDetectionStrategy;
+export module helios.physics.collision.strategies:GridCollisionDetection;
 
 
 import helios.physics.collision.components;
@@ -26,6 +27,7 @@ import helios.ecs.entity;
 import helios.ecs.common;
 
 import helios.core.log;
+import helios.core.thread;
 
 import helios.math;
 
@@ -35,7 +37,7 @@ import helios.engine.spatial.components;
 export namespace helios::physics::collision::strategies {
 
     template<typename THandle>
-    class GridCollisionDetectionStrategy {
+    class GridCollisionDetection {
 
         using CollisionComponent = components::CollisionComponent;
         using CollisionPair = types::CollisionPair<THandle>;
@@ -122,12 +124,35 @@ export namespace helios::physics::collision::strategies {
             cells_.resize(cellCount);
         }
 
+        void solveCells (const std::size_t from, const std::size_t to, std::vector<CollisionPair>& localCollisionPairs) {
+            for (std::size_t i = from; i < to; i++) {
+                if (cells_[trackedCells_[i]].collisionCandidateIndices.size() < 2) {
+                    continue;
+                }
+                solveCell(cells_[trackedCells_[i]], localCollisionPairs);
+            }
+
+            std::sort(localCollisionPairs.begin(), localCollisionPairs.end());
+
+            localCollisionPairs.erase(
+                std::unique(localCollisionPairs.begin(), localCollisionPairs.end()),
+                localCollisionPairs.end()
+            );
+        };
+
+
+        static constexpr std::size_t THRESHOLD = 10000;
+        static constexpr std::size_t CHUNK_COUNT = 8;
+        static constexpr bool USE_THREADS = false;
+
+        std::vector<std::vector<CollisionPair>> chunks_{CHUNK_COUNT};
+
 
     public:
 
 
 
-        explicit GridCollisionDetectionStrategy(
+        explicit GridCollisionDetection(
             const helios::math::aabbf& bounds,
             const float cellSize
         ) : gridBounds_(bounds),
@@ -145,8 +170,12 @@ export namespace helios::physics::collision::strategies {
          * already-solved collision pairs.
          */
         void reset() {
-            for (const auto idx : trackedCells_) {
-                cells_[idx].clear();
+            for (auto& cell: cells_) {
+                cell.clear();
+            }
+
+            for (auto& chunk: chunks_) {
+                chunk.clear();
             }
 
             trackedCells_.clear();
@@ -171,23 +200,39 @@ export namespace helios::physics::collision::strategies {
         }
 
 
-        types::CollisionDetectionResult<THandle> solveCollisions() noexcept {
 
-            for (const auto idx : trackedCells_) {
+        types::CollisionDetectionResult<THandle> solveCollisions(core::thread::ThreadPool& threadPool) noexcept {
 
-                if (cells_[idx].collisionCandidateIndices.size() < 2) {
-                    continue;
+
+            if (USE_THREADS && trackedCells_.size() > THRESHOLD) {
+                threadPool.runAndWait(CHUNK_COUNT, [&](std::size_t taskNumber) {
+                    const auto start = taskNumber * trackedCells_.size() / CHUNK_COUNT;
+                    const auto end = (taskNumber + 1) * trackedCells_.size() / CHUNK_COUNT;
+                    solveCells(start, end, chunks_[taskNumber]);
+                });
+
+                collisionPairs_ = chunks_[0];
+                for (std::size_t i = 1; i < chunks_.size(); ++i) {
+                    std::vector<CollisionPair> merged;
+                    merged.reserve(collisionPairs_.size() + chunks_[i].size());
+
+                    std::merge(
+                        collisionPairs_.begin(), collisionPairs_.end(),
+                        chunks_[i].begin(), chunks_[i].end(),
+                        std::back_inserter(merged)
+                    );
+
+                    collisionPairs_ = std::move(merged);
                 }
 
-                solveCell(cells_[idx]);
+                collisionPairs_.erase(
+                    std::unique(collisionPairs_.begin(), collisionPairs_.end()),
+                    collisionPairs_.end()
+                );
+
+            } else {
+                solveCells(0, trackedCells_.size(), collisionPairs_);
             }
-
-            std::sort(collisionPairs_.begin(), collisionPairs_.end());
-
-            collisionPairs_.erase(
-                std::unique(collisionPairs_.begin(), collisionPairs_.end()),
-                collisionPairs_.end()
-            );
 
 
             return types::CollisionDetectionResult<THandle>(
@@ -286,7 +331,7 @@ export namespace helios::physics::collision::strategies {
         /**
          * @brief Performs pairwise AABB overlap detection for all candidates in a cell.
          */
-        inline void solveCell(GridCell& cell) {
+        inline void solveCell(GridCell& cell, std::vector<CollisionPair>& localCollisionPairs) {
 
             auto& candidateIndices = cell.collisionCandidateIndices;
 
@@ -315,7 +360,7 @@ export namespace helios::physics::collision::strategies {
                         std::swap(a, b);
                     }
 
-                    collisionPairs_.push_back(CollisionPair{
+                    localCollisionPairs.push_back(CollisionPair{
                         lHandle,
                         rHandle,
                         helios::math::overlapCenter(*a, *b),

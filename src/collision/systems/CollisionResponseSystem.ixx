@@ -1,8 +1,10 @@
 /**
-* @file GridCollisionDetectionSystem.ixx
- * @brief Spatial-partitioning based collision detection using a uniform 3D grid.
+* @file CollisionResponseSystem.ixx
+ * @brief Applies collision response functions sequentially to collision pairs.
  */
 module;
+
+#include <utility>
 
 export module helios.physics.collision.systems:CollisionResponseSystem;
 
@@ -23,16 +25,35 @@ import helios.math;
 
 import helios.engine.spatial.components;
 
+import helios.physics.collision.commands;
+
+import helios.ecs.command.TypedCommandBuffer;
+
 #define HELIOS_LOG_SCOPE "helios::physics::systems::CollisionResponseSystem"
 export namespace helios::physics::collision::systems {
 
 
-    template<typename THandle>
+    template<typename THandle, typename TResponseStrategy>
     class CollisionResponseSystem {
+
+        using ResponseStrategy = TResponseStrategy;
+
+        using CollisionCommand = physics::collision::commands::CollisionCommand<THandle>;
+
+        using CommandBuffer = ecs::command::TypedCommandBuffer<CollisionCommand>;
+
+        ResponseStrategy responseStrategy_;
+
     public:
 
+        explicit CollisionResponseSystem(TResponseStrategy&& responseStrategy)
+            : responseStrategy_(std::move(responseStrategy)) {
+        }
+
+
         void update(
-        const types::CollisionDetectionResult<THandle>& collisionResult,
+            CommandBuffer& commandBuffer,
+            const types::CollisionDetectionResult<THandle>& collisionResult,
             ecs::entity::query::Query<
                 THandle,
                 ecs::entity::ReadSet<motion::components::Velocity3DComponent<engine::core::types::Local>>,
@@ -43,14 +64,12 @@ export namespace helios::physics::collision::systems {
 
             const auto& collisions = collisionResult.collisionPairs();
 
-            constexpr float restitution = 1.0f;
-
             for (const auto& collisionPair : collisions) {
 
                 auto lftResult = query.get(collisionPair.leftHandle);
                 auto rgtResult = query.get(collisionPair.rightHandle);
 
-                // staionary collision (most unlikely)
+                // stationary collision (most unlikely)
                 if (!lftResult && !rgtResult) [[unlikely]] {
                     continue;
                 }
@@ -68,49 +87,42 @@ export namespace helios::physics::collision::systems {
                     rightVelocity = velocity->value();
                 }
 
-                // at least one stationary
-                const float leftInverseMass  = lftResult ? 1.0f : 0.0f;
-                const float rightInverseMass = rgtResult ? 1.0f : 0.0f;
+                auto collisionSnapshot = collisionPair.collisionSnapshot;
+                collisionSnapshot.leftDynamic = static_cast<bool>(lftResult);
+                collisionSnapshot.rightDynamic = static_cast<bool>(rgtResult);
 
-                const auto relativeVelocity =
-                    rightVelocity - leftVelocity;
+                auto collisionResponse = responseStrategy_.process(
+                    collisionSnapshot,
+                    leftVelocity,
+                    rightVelocity
+                );
 
-                // overlapNormal: left -> right.
-                const float velocityAlongNormal =
-                    helios::math::dot(
-                        relativeVelocity,
-                        collisionPair.overlapNormal
-                    );
-
-                // moving away from each other - ignore
-                if (velocityAlongNormal >= 0.0f) {
+                if (!collisionResponse) {
                     continue;
                 }
 
-                const float impulseMagnitude =
-                    -(1.0f + restitution) *
-                    velocityAlongNormal /
-                    (leftInverseMass + rightInverseMass);
-
-                const auto impulse = collisionPair.overlapNormal * impulseMagnitude;
+                leftVelocity = collisionResponse->leftVelocity;
+                rightVelocity = collisionResponse->rightVelocity;
 
                 if (lftResult) {
                     auto [entity, velocity] = *lftResult;
 
                     velocity->setValue(
-                        leftVelocity -
-                        impulse * leftInverseMass
+                        leftVelocity
                     );
                 }
 
                 if (rgtResult) {
                     auto [entity, velocity] = *rgtResult;
-
-                    velocity->setValue(
-                        rightVelocity +
-                        impulse * rightInverseMass
-                    );
+                    velocity->setValue(rightVelocity);
                 }
+
+                commandBuffer.template add<CollisionCommand>(CollisionCommand{
+                    .leftHandle = collisionPair.leftHandle,
+                    .rightHandle = collisionPair.rightHandle,
+                    .type = commands::CollisionCommandType::Impact,
+                    .location = collisionPair.collisionSnapshot.overlapCenter
+                });
             }
         }
     };
