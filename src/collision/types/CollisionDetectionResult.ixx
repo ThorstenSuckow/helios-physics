@@ -19,6 +19,9 @@ export namespace helios::physics::collision ::types{
 
     public:
 
+
+        CollisionDetectionResult() = default;
+
         explicit CollisionDetectionResult(std::vector<CollisionPair>&& pairs)
         : collisionPairs_(std::move(pairs)){};
 
